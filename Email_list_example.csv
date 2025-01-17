@@ -1,4 +1,4 @@
-email,recipient
-malan@harvard.edu,David J. Malan
-
-
+email,recipient,company
+djmalan@harvard.edu,David J. Malan,Hardvard
+stevejobs@apple.com,Steve Jobs,Apple
+johndoe@example.com,John Doe,Example

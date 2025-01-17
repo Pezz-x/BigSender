@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QDesktopServices
 from PyQt6.QtCore import QUrl, Qt
 import pandas as pd 
-import re
+
 import os
 import fitz
 import smtplib
@@ -34,41 +34,8 @@ class MainWindow(QMainWindow):
         layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         # colour scheme
-        self.setStyleSheet("""
-            QMainWindow {
-                background-color: #2b2b2b;
-            }
-            QWidget {
-                background-color: #3c3c3c;
-                color: #ffffff;
-                border: 1px solid #555555;
-            }
-            QLabel {
-                color: #ffffff;
-                border: none;
-            }
-            QPushButton {
-                background-color: #555555;
-                color: #ffffff;
-                border: 1px solid #777777;
-                padding: 5px;
-            }
-            QPushButton:hover {
-                background-color: #777777;
-            }
-            QLineEdit {
-                background-color: #3c3c3c;
-                color: #ffffff;
-                border: 1px solid #555555;
-                padding: 5px;
-            }
-            QPlainTextEdit {
-                background-color: #000000;
-                color: #65EA77;
-                border: 1px solid #555555;
-                padding: 5px;
-            }
-        """)
+        with open("style.css", "r") as file:
+            self.setStyleSheet(file.read())
 
         # Gmail adress input
         self.email_label = QLabel("Gmail Address:")
@@ -114,7 +81,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.subject_label)
         layout.addWidget(self.subject_input)
 
-        # Email Body
+        # Email Body Input
         self.body_label = QLabel("Email Body:")
         self.body_opener_label = QLabel("Hello [recipient] ,")
         self.body_input = QTextEdit()
@@ -123,8 +90,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.body_opener_label)
         layout.addWidget(self.body_input)
 
-        # Cover Letter Base File Selector
-
+        # Cover Letter Input
         self.cover_letter_label = QLabel("Cover Letter:")
         self.cover_letter_opener_label = QLabel("Hello [recipient] ,")
         self.cover_letter_input = QTextEdit()
@@ -177,7 +143,6 @@ class MainWindow(QMainWindow):
         if file_path:
             self.cv_path.setText(file_path)
 
-
     def send_emails(self):
         # Collect user inputs
         gmail_user = self.email_input.text()
@@ -206,9 +171,10 @@ class MainWindow(QMainWindow):
             return
         
         # validate column names in the CSV file
+        valid_columns = ['email', 'recipient', 'company']
         for col in email_data.columns:
-            if col not in ['email', 'recipient']:
-                self.terminal_output.appendPlainText(f"[Error] Invalid column name in CSV file: {col} \nPlease use 'email' and 'recipient' as column names.")
+            if col not in valid_columns:
+                self.terminal_output.appendPlainText(f"[Error] Invalid column name in CSV file: {col} \nPlease use 'email', 'recipient' and 'company' as column names.")
                 return
 
         # Initialise report data
@@ -221,7 +187,8 @@ class MainWindow(QMainWindow):
 
         for _, row in email_data.iterrows():
             email = str(row.get('email')) if pd.notna(row.get('email')) else None
-            recipient = row.get('recipient').title() if pd.notna(row.get('recipient')) else 'There'
+            recipient = row.get('recipient').title() if pd.notna(row.get('recipient')) else row.get('company').title() if pd.notna(row.get('company')) else 'There'
+            company = row.get('company').title() if pd.notna(row.get('company')) else row.get('recipient').title() if pd.notna(row.get('recipient')) else 'There'
 
             # Initialise default status
             status = "--INVALID EMAIL--"
@@ -232,7 +199,7 @@ class MainWindow(QMainWindow):
                 modified_email_body = f"Hello {recipient.title()},\n\n{email_body}"
 
                 # Create a custom cover letter for the recipient
-                custom_cover_letter_path = self.create_custom_cover_letter(recipient, cover_letter_template)
+                custom_cover_letter_path = self.create_custom_cover_letter(company, cover_letter_template)
 
                 # Send the email with the customized cover letter
                 status = self.send_email(gmail_user, gmail_password, email, subject, modified_email_body, cv_pdf, custom_cover_letter_path)
@@ -244,7 +211,7 @@ class MainWindow(QMainWindow):
                     email_count_failed += 1
 
             # Append status to report data
-            report_data.append((status, email, recipient))
+            report_data.append((status, email, recipient, company))
 
         # Save the report to CSV
         try:
@@ -308,15 +275,15 @@ class MainWindow(QMainWindow):
         os.makedirs("Email_reports", exist_ok=True)
 
         # Save the report data to CSV with the new filename
-        report_df = pd.DataFrame(report_data, columns=["status", "email", "recipient"])
+        report_df = pd.DataFrame(report_data, columns=["status", "email", "recipient", "company"])
         report_df.to_csv(report_filename, index=False)
-        self.terminal_output.appendPlainText(f"\nEmail report created and saved to: \n    {report_filename}")
+        self.terminal_output.appendPlainText(f"Email report created and saved to: \n    {report_filename}")
 
-    # Create a custom cover letter for the recipient
-    def create_custom_cover_letter(self, recipient, cover_letter_template):
-        cover_letter_template = f"Hello {recipient.title()},\n\n{cover_letter_template}"
+    # Create a custom cover letter for the company
+    def create_custom_cover_letter(self, company, cover_letter_template):
+        cover_letter_template = f"Dear {company.title()},\n\n{cover_letter_template}"
     
-        output_path = f"Created_Coverletters/{recipient}_PF_Coverletter.pdf"
+        output_path = f"Created_Coverletters/{company}_PF_Coverletter.pdf"
         os.makedirs("Created_Coverletters", exist_ok=True)
     
         # Setting up the PDF text box
