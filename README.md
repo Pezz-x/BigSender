@@ -26,10 +26,10 @@ A Gmail Account - This will be the account you use to send the emails.
 
 A CSV File with Recipient Information - Your CSV file should include two columns: one for email addresses and one for recipient names. It should be formatted like this:
 
-email,recipient,company
-malan@harvard.edu,David J. Malan,Hardvard
-stevejobs@apple.com,Steve Jobs,Apple
-johndoe@example.com,John Doe,Example
+email,recipient,company .
+malan@harvard.edu,David J. Malan,Hardvard .
+stevejobs@apple.com,Steve Jobs,Apple .
+johndoe@example.com,John Doe,Example .
 
 You can easily create this using any spreadsheet program, such as Excel or Google Sheets, and then export it as a .csv file.
 I have also included Email_list_example.csv to get started with.
